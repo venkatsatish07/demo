@@ -1,12 +1,13 @@
-# Use the official Maven image to build the application
-FROM maven:3.6.3-jdk-11 AS build
+# Stage 1: Build
+FROM maven:3.8.1-openjdk-17-slim AS build
 WORKDIR /app
 COPY pom.xml .
+RUN mvn dependency:go-offline
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Use the official OpenJDK image to run the application
-FROM openjdk:11-jre-slim
+# Stage 2: Runtime
+FROM openjdk:17-jdk-slim
 WORKDIR /app
-COPY --from=build /app/target/demo-0.0.1-SNAPSHOT.jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
+COPY --from=build /app/target/demo-0.0.1-SNAPSHOT.jar ./demo.jar
+CMD ["java", "-jar", "demo.jar"]

@@ -1,57 +1,41 @@
 pipeline {
     agent any
-
-    environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        GITHUB_CREDENTIALS = credentials('github-credentials')
-    }
-
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git url: 'https://github.com/venkatsatish07/demo', branch: 'main'
             }
         }
-
         stage('Build with Maven') {
             steps {
                 script {
-                    sh 'mvn clean package'
-                }
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    def app = docker.build("venkats061/demo:${env.BUILD_ID}")
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'DOCKERHUB_CREDENTIALS') {
-                        def app = docker.image("venkats061/demo:${env.BUILD_ID}")
-                        app.push()
+                    docker.image('maven:3.6.3-jdk-11').inside {
+                        sh 'mvn clean package'
                     }
                 }
             }
         }
-
-        stage('Deploy to Kubernetes') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'kubectl apply -f k8s/deployment.yaml'
+                    def jdImage = "venkats061/demo:latest"
+                    sh "docker build -t ${jdImage} ."
                 }
             }
         }
-    }
-
-    post {
-        always {
-            cleanWs()
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
+                        sh "docker push ${jdImage}"
+                    }
+                }
+            }
+        }
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl apply -f deployment.yaml'
+            }
         }
     }
 }
