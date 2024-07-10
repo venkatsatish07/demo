@@ -1,6 +1,10 @@
 pipeline {
     agent any
     
+    environment {
+        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64' // Adjusted JDK path for Java 17
+    }
+    
     stages {
         stage('Checkout') {
             steps {
@@ -11,7 +15,7 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 script {
-                    docker.image('maven:3.6.3-jdk-11').inside {
+                    docker.image('maven:3.8.4-openjdk-17').inside { // Adjusted to use OpenJDK 17
                         sh 'mvn clean package'
                     }
                 }
@@ -21,10 +25,10 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def jdImage = "venkats061/demo:latest"
-                    sh "docker build -t ${jdImage} ."
-                    currentBuild.displayName = "# $jdImage"
-                    currentBuild.description = "Pushed $jdImage to Docker Hub"
+                    def dockerImage = "venkats061/demo:latest"
+                    sh "docker build -t ${dockerImage} ."
+                    currentBuild.displayName = "# ${dockerImage}"
+                    currentBuild.description = "Pushed ${dockerImage} to Docker Hub"
                 }
             }
         }
@@ -32,9 +36,9 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    def jdImage = "venkats061/demo:latest"
+                    def dockerImage = "venkats061/demo:latest"
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
-                        sh "docker push ${jdImage}"
+                        sh "docker push ${dockerImage}"
                     }
                 }
             }
