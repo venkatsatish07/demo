@@ -15,7 +15,7 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 script {
-                    docker.image('maven:3.8.4-openjdk-17').inside {
+                    docker.image('maven:3.8.4-openjdk-17').inside("-u root:root -e JAVA_HOME=${env.JAVA_HOME}") {
                         sh 'mvn clean package'
                     }
                 }
